@@ -2,117 +2,96 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Image → ASCII (Paste Supported)</title>
+<title>Color ASCII Converter</title>
 <style>
   body {
-    background: #0b0f14;
-    color: #00ff9c;
+    background: #0b0b0b;
+    color: white;
     font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     padding: 20px;
   }
 
-  #box {
-    border: 1px dashed #00ff9c;
-    padding: 20px;
-    text-align: center;
-    margin-bottom: 20px;
+  input {
+    margin-bottom: 12px;
+  }
+
+  #output {
+    white-space: pre;
+    font-size: 6px;
+    line-height: 6px;
+    letter-spacing: 1px;
+    max-width: 100%;
+    overflow: auto;
+    background: black;
+    padding: 10px;
+    border: 1px solid #333;
   }
 
   canvas {
     display: none;
   }
-
-  pre {
-    font-size: 6px;
-    line-height: 6px;
-    white-space: pre;
-    background: #05070a;
-    padding: 10px;
-    overflow: auto;
-  }
 </style>
 </head>
 <body>
 
-<h1>Image → ASCII (Paste / Drag & Drop)</h1>
-
-<div id="box" contenteditable="true">
-ここに画像を貼り付ける（Ctrl+V / 長押し貼り付け）
-<br>またはドラッグ＆ドロップ
-</div>
+<h2>🌈 Image → Color ASCII (HELL MODE)</h2>
+<input type="file" id="fileInput" accept="image/*" />
 
 <canvas id="canvas"></canvas>
 <pre id="output"></pre>
 
 <script>
-const box = document.getElementById("box");
+const fileInput = document.getElementById("fileInput");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const output = document.getElementById("output");
 
+// 密度高いほどリアル、でも重い
 const chars = "@%#*+=-:. ";
 
-function convert(image) {
-  const width = 120;
-  const scale = width / image.width;
-  canvas.width = width;
-  canvas.height = image.height * scale;
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const img = new Image();
 
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  img.onload = () => {
+    const width = 120; // 上げるとPCが死ぬ
+    const scale = width / img.width;
+    const height = img.height * scale * 0.5;
 
-  let ascii = "";
+    canvas.width = width;
+    canvas.height = height;
 
-  for (let y = 0; y < canvas.height; y++) {
-    for (let x = 0; x < canvas.width; x++) {
-      const i = (y * canvas.width + x) * 4;
-      const r = imgData[i];
-      const g = imgData[i + 1];
-      const b = imgData[i + 2];
+    ctx.drawImage(img, 0, 0, width, height);
 
-      const gray = (r + g + b) / 3;
-      const charIndex = Math.floor((gray / 255) * (chars.length - 1));
-      ascii += chars[charIndex];
+    const data = ctx.getImageData(0, 0, width, height).data;
+
+    let html = "";
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+
+        const i = (y * width + x) * 4;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        const brightness = (r + g + b) / 3;
+        const char = chars[Math.floor((brightness / 255) * (chars.length - 1))];
+
+        html += `<span style="color:rgb(${r},${g},${b})">${char}</span>`;
+      }
+      html += "<br>";
     }
-    ascii += "\n";
-  }
 
-  output.textContent = ascii;
-}
-
-// Paste対応
-box.addEventListener("paste", (e) => {
-  const items = e.clipboardData.items;
-  for (let item of items) {
-    if (item.type.indexOf("image") !== -1) {
-      const file = item.getAsFile();
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => convert(img);
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-});
-
-// Drag & Drop対応
-box.addEventListener("dragover", (e) => e.preventDefault());
-
-box.addEventListener("drop", (e) => {
-  e.preventDefault();
-  const file = e.dataTransfer.files[0];
-  const reader = new FileReader();
-
-  reader.onload = (event) => {
-    const img = new Image();
-    img.onload = () => convert(img);
-    img.src = event.target.result;
+    output.innerHTML = html;
   };
 
-  reader.readAsDataURL(file);
+  img.src = URL.createObjectURL(file);
 });
 </script>
 
