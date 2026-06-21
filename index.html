@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Image → ASCII Art</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  canvas { display: none; }
+  pre {
+    font-family: monospace;
+    font-size: 6px;
+    line-height: 6px;
+    white-space: pre;
+    background: #111;
+    color: #eee;
+    padding: 10px;
+    overflow: auto;
+  }
+</style>
+</head>
+<body>
+
+<h2>画像 → ASCIIアート変換</h2>
+
+<input type="file" id="fileInput" accept="image/*">
+<br><br>
+
+<canvas id="canvas"></canvas>
+
+<pre id="output"></pre>
+
+<script>
+const chars = "@%#*+=-:. ";
+
+const fileInput = document.getElementById("fileInput");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const output = document.getElementById("output");
+
+fileInput.addEventListener("change", function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  const img = new Image();
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    img.src = e.target.result;
+  };
+
+  img.onload = function() {
+    const width = 120;
+    const height = Math.floor(img.height / img.width * width * 0.5);
+
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.drawImage(img, 0, 0, width, height);
+
+    const imageData = ctx.getImageData(0, 0, width, height).data;
+
+    let ascii = "";
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4;
+
+        const r = imageData[i];
+        const g = imageData[i + 1];
+        const b = imageData[i + 2];
+
+        const brightness = (r + g + b) / 3;
+        const index = Math.floor((brightness / 255) * (chars.length - 1));
+
+        ascii += chars[index];
+      }
+      ascii += "\n";
+    }
+
+    output.textContent = ascii;
+  };
+
+  reader.readAsDataURL(file);
+});
+</script>
+
+</body>
+</html>
