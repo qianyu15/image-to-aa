@@ -7,8 +7,8 @@
 3. 生成ボタンを押す
 ## CLIの場合
 1. `./aa <FILENAME>`というコマンド実行する  
-**※ Optional**
- PATHに通したい場合は以下のコマンドを実行する
+**※ Optional**  
+ PATHに通したい場合は以下のコマンドを実行する  
 `sh to-path.sh`
 
 
